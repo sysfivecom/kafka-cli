@@ -33,6 +33,7 @@ var (
 	topic    = kingpin.Flag("topic", "Which topic should be used.").Short('T').Required().String()
 	tseconds = kingpin.Flag("timeout", "Session Timeout in seconds.").Default("6").Short('t').String()
 	verbose  = kingpin.Flag("verbose", "Verbose mode.").Short('v').Bool()
+	tail     = kingpin.Flag("tail", "Stay connected to the topic to consume messages.").Short('f').Bool()
 )
 
 func main() {
@@ -99,7 +100,12 @@ func main() {
 		default:
 			event := c.Poll(100)
 			if event == nil {
-				continue
+				if *tail {
+					continue
+				} else {
+					fmt.Printf("No messages to consume found, terminating.\n")
+					run = false
+				}
 			}
 
 			switch e := event.(type) {
@@ -115,6 +121,8 @@ func main() {
 				if e.Code() == kafka.ErrAllBrokersDown {
 					run = false
 				}
+			case nil:
+				continue
 			default:
 				fmt.Printf("Ignored %v\n", e)
 			}
